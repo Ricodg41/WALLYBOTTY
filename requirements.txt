@@ -1,0 +1,22 @@
+# Crypto Trading Bot - Requirements
+
+# Core dependencies
+ccxt>=4.0.0              # Multi-exchange trading library
+pandas>=2.0.0            # Data manipulation
+numpy>=1.24.0            # Numerical computing
+requests>=2.31.0         # HTTP requests for CoinGecko API
+
+# Web dashboard
+flask>=3.0.0             # Web framework
+flask-socketio>=5.3.0    # Real-time WebSocket updates
+python-socketio>=5.10.0  # Socket.IO client
+eventlet>=0.34.0         # Async support for Flask-SocketIO
+gunicorn>=21.2.0         # Production WSGI server
+
+# Utilities
+python-dotenv>=1.0.0     # Environment variables
+schedule>=1.2.0          # Task scheduling
+colorama>=0.4.6          # Colored terminal output
+
+# Testing
+pytest>=7.4.0            # Testing framework

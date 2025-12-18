@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Trading Bot Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.0/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">₿</span>
+                <h1>Crypto Trading Bot</h1>
+            </div>
+            <div class="header-controls">
+                <div class="mode-toggle">
+                    <span class="mode-label">Mode:</span>
+                    <button id="mode-btn" class="mode-btn paper">PAPER</button>
+                </div>
+                <div class="bot-controls">
+                    <button id="start-btn" class="btn btn-success">▶ Start Bot</button>
+                    <button id="stop-btn" class="btn btn-danger" disabled>⏹ Stop Bot</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Stats Bar -->
+            <div class="stats-bar">
+                <span class="stat-label">Balance <button id="wallet-btn" class="btn-xs">Manage</button></span>
+                <span id="balance" class="stat-value">$10,000.00</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Total P/L</span>
+                <span id="total-pnl" class="stat-value neutral">$0.00</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Open Positions</span>
+                <span id="open-positions" class="stat-value">0</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Status</span>
+                <span id="bot-status" class="stat-value status-stopped">Stopped</span>
+            </div>
+    </div>
+
+    <div class="content-grid">
+        <!-- Left Panel: Triggers Configuration -->
+        <section class="panel triggers-panel">
+            <h2 class="panel-title">
+                <span class="panel-icon">⚙️</span>
+                Trading Triggers
+            </h2>
+
+            <!-- Buy Triggers -->
+            <div class="trigger-group">
+                <h3 class="trigger-group-title buy-title">📈 Buy Triggers</h3>
+
+                <div class="trigger-item">
+                    <label for="rsi-buy">RSI Below</label>
+                    <div class="input-group">
+                        <input type="range" id="rsi-buy-slider" min="10" max="50" value="30" class="slider">
+                        <input type="number" id="rsi-buy" min="10" max="50" value="30" class="input-small">
+                    </div>
+                    <span class="trigger-desc">Buy when RSI drops below this value (oversold)</span>
+                </div>
+
+                <div class="trigger-item">
+                    <label for="dip-percent">Dip Percentage</label>
+                    <div class="input-group">
+                        <input type="range" id="dip-slider" min="1" max="20" value="5" step="0.5" class="slider">
+                        <input type="number" id="dip-percent" min="1" max="20" value="5" step="0.5" class="input-small">
+                        <span class="input-suffix">%</span>
+                    </div>
+                    <span class="trigger-desc">Buy when price dips X% from 24h high</span>
+                </div>
+
+                <div class="trigger-item">
+                    <label for="volume-spike">Volume Spike</label>
+                    <div class="input-group">
+                        <input type="range" id="volume-slider" min="1" max="5" value="1.5" step="0.1" class="slider">
+                        <input type="number" id="volume-spike" min="1" max="5" value="1.5" step="0.1"
+                            class="input-small">
+                        <span class="input-suffix">x</span>
+                    </div>
+                    <span class="trigger-desc">Buy when volume is X times average</span>
+                </div>
+
+                <div class="trigger-item checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="require-all-buy">
+                        <span>Require ALL conditions (AND logic)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Sell Triggers -->
+            <div class="trigger-group">
+                <h3 class="trigger-group-title sell-title">📉 Sell Triggers</h3>
+
+                <div class="trigger-item">
+                    <label for="rsi-sell">RSI Above</label>
+                    <div class="input-group">
+                        <input type="range" id="rsi-sell-slider" min="50" max="90" value="70" class="slider">
+                        <input type="number" id="rsi-sell" min="50" max="90" value="70" class="input-small">
+                    </div>
+                    <span class="trigger-desc">Sell when RSI rises above this value (overbought)</span>
+                </div>
+
+                <div class="trigger-item">
+                    <label for="rise-percent">Take Profit</label>
+                    <div class="input-group">
+                        <input type="range" id="rise-slider" min="1" max="50" value="10" step="1" class="slider">
+                        <input type="number" id="rise-percent" min="1" max="50" value="10" step="1" class="input-small">
+                        <span class="input-suffix">%</span>
+                    </div>
+                    <span class="trigger-desc">Sell when profit reaches X% from entry</span>
+                </div>
+
+                <div class="trigger-item">
+                    <label for="stop-loss">Stop Loss</label>
+                    <div class="input-group">
+                        <input type="range" id="stoploss-slider" min="1" max="20" value="5" step="0.5" class="slider">
+                        <input type="number" id="stop-loss" min="1" max="20" value="5" step="0.5" class="input-small">
+                        <span class="input-suffix">%</span>
+                    </div>
+                    <span class="trigger-desc">Sell when loss exceeds X% from entry</span>
+                </div>
+            </div>
+
+            <button id="save-triggers" class="btn btn-primary btn-full">💾 Save Triggers</button>
+        </section>
+
+        <!-- Center Panel: Live Market Data (Top 100) -->
+        <section class="panel prices-panel">
+            <h2 class="panel-title">
+                <span class="panel-icon">💰</span>
+                Top 100 Crypto Market
+            </h2>
+
+            <div class="prices-table-container scrollable-10">
+                <table class="prices-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Coin</th>
+                            <th>Price</th>
+                            <th>24h</th>
+                            <th>Mkt Cap</th>
+                            <th>Vol</th>
+                        </tr>
+                    </thead>
+                    <tbody id="top100-body">
+                        <tr>
+                            <td colspan="6" class="loading">Loading Top 100...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Coin Selection (Hidden for now to focus on simple list, or kept separate?)
+                 The user asked for "1 list", implying they just want to see the market. 
+                 But they need to configure the bot. I'll keep the config valid but maybe hide the visual clutter if preferred.
+                 Actually, I'll keep the "Monitor Coins" below but distinct, or maybe the user wants to trade FROM this list?
+                 For now, I'll assume they just want the price feed to be this list.
+            -->
+        </section>
+
+        <!-- Right Panel: Trade History -->
+        <section class="panel trades-panel">
+            <h2 class="panel-title">
+                <span class="panel-icon">📜</span>
+                Trade History
+            </h2>
+
+            <div class="trades-tabs">
+                <button class="tab-btn active" data-tab="open">Open</button>
+                <button class="tab-btn" data-tab="closed">Closed</button>
+            </div>
+
+            <div id="open-trades" class="trades-list active">
+                <p class="no-trades">No open positions</p>
+            </div>
+
+            <div id="closed-trades" class="trades-list">
+                <p class="no-trades">No closed trades yet</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- Price Chart Panel (TradingView) -->
+    <section class="panel chart-panel" id="chart-panel" style="display: none;">
+        <h2 class="panel-title">
+            <span class="panel-icon">📈</span>
+            <span id="chart-title">Price Chart</span>
+            <button id="close-chart" class="btn btn-small">✕ Close</button>
+        </h2>
+        <div class="chart-wrapper" style="position: relative;">
+            <div class="chart-overlay-controls">
+                <button id="chart-btn-buy" class="btn btn-success btn-overlay">BUY</button>
+                <button id="chart-btn-sell" class="btn btn-danger btn-overlay">SELL</button>
+            </div>
+            <div class="tradingview-container" id="tradingview-widget">
+                <!-- TradingView widget will be injected here -->
+            </div>
+        </div>
+        <div class="chart-indicators">
+            <div class="indicator-box">
+                <span class="indicator-label">RSI</span>
+                <span id="chart-rsi" class="indicator-value">--</span>
+            </div>
+            <div class="indicator-box">
+                <span class="indicator-label">24h High</span>
+                <span id="chart-high" class="indicator-value">--</span>
+            </div>
+            <div class="indicator-box">
+                <span class="indicator-label">24h Low</span>
+                <span id="chart-low" class="indicator-value">--</span>
+            </div>
+            <div class="indicator-box">
+                <span class="indicator-label">Dip %</span>
+                <span id="chart-dip" class="indicator-value">--</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Activity Log -->
+    <section class="panel log-panel">
+        <h2 class="panel-title">
+            <span class="panel-icon">📋</span>
+            Activity Log
+            <button id="clear-log" class="btn btn-small">Clear</button>
+        </h2>
+        <div id="activity-log" class="activity-log">
+            <div class="log-entry info">
+                <span class="log-time">--:--:--</span>
+                <span class="log-msg">Waiting for bot to start...</span>
+            </div>
+        </div>
+    </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <span>Last Update: <span id="last-update">Never</span></span>
+        <span>|</span>
+        <span id="connection-status" class="disconnected">● Disconnected</span>
+    </footer>
+    <!-- Wallet Modal -->
+    <div id="wallet-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Manage Simulated Wallet</h2>
+            <div class="wallet-actions">
+                <div class="action-group">
+                    <h3>Deposit Funds</h3>
+                    <div class="input-row">
+                        <input type="number" id="deposit-amount" placeholder="Amount (USDT)" min="1">
+                        <button id="deposit-btn" class="btn btn-success">Deposit</button>
+                    </div>
+                </div>
+                <div class="action-group">
+                    <h3>Withdraw Funds</h3>
+                    <div class="input-row">
+                        <input type="number" id="withdraw-amount" placeholder="Amount (USDT)" min="1">
+                        <button id="withdraw-btn" class="btn btn-warning">Withdraw</button>
+                    </div>
+                </div>
+                <div class="action-group">
+                    <h3>Reset Wallet</h3>
+                    <p class="warning-text">Reset balance to initial $10,000</p>
+                    <button id="reset-wallet-btn" class="btn btn-danger">Reset to Default</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+
+</html>

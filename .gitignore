@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+.venv
+env.bak/
+venv.bak/
+
+# Environment Inputs
+.env
+
+# Logs
+logs/
+*.log
+
+# Mac
+.DS_Store
+
+# IDEs
+.idea/
+.vscode/
+
+# Project artifacts
+artifacts/
