@@ -21,5 +21,5 @@ EXPOSE 5000
 # Define environment variable
 ENV PYTHONUNBUFFERED=1
 
-# Run gunicorn when the container launches
-CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:5000", "wsgi:app"]
+# Run gunicorn when the container launches (use shell form to expand $PORT)
+CMD gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT wsgi:app
